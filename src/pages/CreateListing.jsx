@@ -13,6 +13,7 @@ import { addDoc, collection, serverTimestamp  } from "firebase/firestore";
 const CreateListing = () => {
     //eslint-disable-next-line
   const [geolocationEnabled, setGeolocationEnabled] = useState(false)
+  const [fileUploadLoading, setFileUploadLoading] = useState(0)
   const [loading, setLoading] = useState(true)
   const [formData, setFormData] = useState({
     type : 'rent',
@@ -116,24 +117,33 @@ const CreateListing = () => {
             uploadTask.on('state_changed', 
             (snapshot) => {
                 const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                setFileUploadLoading(progress)
                 console.log('Upload is ' + progress + '% done');
                 switch (snapshot.state) {
                 case 'paused':
                     console.log('Upload is paused');
+                    setFileUploadLoading(50)
                     break;
                 case 'running':
                     console.log('Upload is running');
+                    setFileUploadLoading(70)
                     break;
                 default:
                     console.log("Some Error Happend")
+                    setFileUploadLoading(0)
+                    break
                 }
             }, 
             (error) => {
                 reject(error)
+
             }, 
             () => {
                 getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
+                    setFileUploadLoading(100)
                     resolve(downloadURL);
+
+                    setFileUploadLoading(0)
                 });
             }
             );
@@ -199,7 +209,7 @@ const CreateListing = () => {
   }
 
 
-  if(loading){
+  if(images.length <= 0 && loading){
     return <Spinner />
   }
 
@@ -293,6 +303,14 @@ const CreateListing = () => {
                 <p className="imagesInfo">The first image will be the cover (max 6).</p>
                 <input type="file" id="images" className="formInputFile" max='6' accept=".jpg,.png,.jpeg" onChange={onMutate} multiple required/>
             </label>
+
+            {images.length > 0 && (
+                <div className="w-full bg-gray-200 h-1 mb-6">
+                <div className="bg-green-600 h-1" style={{width: `${fileUploadLoading}%`}}></div>
+            </div>
+            )}
+
+            
 
             <button className="primaryButton createListingButton">Create Listing</button>
         </form>
